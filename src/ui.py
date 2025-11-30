@@ -1,5 +1,6 @@
 """
 Streamlit UI for German Translator with Gender-Colored Articles.
+Grid layout with sidebar for Color Legend and Examples.
 """
 
 import streamlit as st
@@ -12,140 +13,31 @@ COLORS = {
     "gray_medium": "#A9ACA9",     # Medium gray - secondary text
     "purple_muted": "#60495A",    # Muted purple - borders, accents
     "purple_dark": "#2F2235",     # Dark purple - cards, sidebar
-    "purple_darker": "#3F3244",   # Darkest purple - main background
+    "purple_darker": "#1A1520",   # Darkest purple - main background
+    "black": "#0D0B0E",           # Near black - outer frame
 }
 
 
-def render_color_legend():
-    """Render the color legend in the sidebar."""
-    st.sidebar.markdown(
-        f'<h2 style="color: {COLORS["sage_light"]};">🎨 Color Legend</h2>',
-        unsafe_allow_html=True
-    )
-    
+def render_sidebar():
+    """Render sidebar with Color Legend and Examples."""
+    # ─────────────────────────────────────────
+    # COLOR LEGEND BOX
+    # ─────────────────────────────────────────
     legend = get_color_legend()
+    legend_items = ""
     for label, color in legend.items():
-        st.sidebar.markdown(
-            f'<div style="padding: 5px 0;"><span style="color: {color}; font-size: 20px; font-weight: bold;">●</span> <span style="color: {COLORS["sage_light"]};">{label}</span></div>',
-            unsafe_allow_html=True
-        )
-
-
-def render_header():
-    """Render the app header."""
-    st.markdown(
-        f"""
-        <div style="text-align: center; padding: 30px 0; margin-bottom: 20px;">
-            <h1 style="color: {COLORS["sage_light"]}; margin-bottom: 10px; font-size: 2.8rem; font-weight: 700;">
-                🇩🇪 German Translator
-            </h1>
-            <p style="color: {COLORS["gray_medium"]}; font-size: 1.2rem;">
-                Translate German to English & Spanish with gender-colored articles
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-def render_colorized_german(german_text: str):
-    """Render the German text with colored articles and nouns."""
-    if not german_text:
-        return
+        legend_items += f'<div style="display: flex; align-items: center; gap: 10px; padding: 6px 0;"><span style="width: 14px; height: 14px; background: {color}; border-radius: 50%; display: inline-block; flex-shrink: 0;"></span><span style="color: {COLORS["sage_light"]}; font-size: 14px;">{label}</span></div>'
     
-    st.markdown(
-        f'<h3 style="color: {COLORS["sage_light"]};">🇩🇪 German with Gender Colors</h3>',
-        unsafe_allow_html=True
-    )
-    
-    colorized_html = colorize_text_html(german_text)
-    
-    st.markdown(
-        f"""
-        <div style="
-            background-color: {COLORS["purple_dark"]};
-            border: 2px solid {COLORS["purple_muted"]};
-            border-radius: 12px;
-            padding: 25px;
-            font-size: 22px;
-            line-height: 2;
-            color: {COLORS["sage_light"]};
-        ">
-            {colorized_html}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-def render_english_translation(german_text: str):
-    """Render the English translation in a styled box."""
-    if not german_text:
-        return
-    
-    st.markdown(
-        f'<h3 style="color: {COLORS["sage_light"]};">🇬🇧 English Translation</h3>',
-        unsafe_allow_html=True
-    )
-    
-    english_text = translate_to_english(german_text)
-    
-    st.markdown(
-        f"""
-        <div style="
-            background-color: {COLORS["purple_dark"]};
-            border: 2px solid {COLORS["purple_muted"]};
-            border-radius: 12px;
-            padding: 25px;
-            font-size: 22px;
-            line-height: 2;
-            color: {COLORS["sage_light"]};
-        ">
-            {english_text}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-def render_spanish_translation(german_text: str):
-    """Render the Spanish translation in a styled box."""
-    if not german_text:
-        return
-    
-    st.markdown(
-        f'<h3 style="color: {COLORS["sage_light"]};">🇪🇸 Spanish Translation</h3>',
-        unsafe_allow_html=True
-    )
-    
-    spanish_text = translate_to_spanish(german_text)
-    
-    st.markdown(
-        f"""
-        <div style="
-            background-color: {COLORS["purple_dark"]};
-            border: 2px solid {COLORS["purple_muted"]};
-            border-radius: 12px;
-            padding: 25px;
-            font-size: 22px;
-            line-height: 2;
-            color: {COLORS["sage_light"]};
-        ">
-            {spanish_text}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-def render_example_sentences():
-    """Render example sentences in the sidebar."""
     st.sidebar.markdown(
-        f'<hr style="border-color: {COLORS["purple_muted"]}; margin: 20px 0;">',
+        f'<div style="background: {COLORS["purple_dark"]}; border: 2px solid {COLORS["purple_muted"]}; border-radius: 8px; padding: 20px; margin-bottom: 20px;"><h3 style="color: {COLORS["sage_light"]}; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">🎨 Color Legend</h3>{legend_items}</div>',
         unsafe_allow_html=True
     )
+    
+    # ─────────────────────────────────────────
+    # EXAMPLES BOX
+    # ─────────────────────────────────────────
     st.sidebar.markdown(
-        f'<h2 style="color: {COLORS["sage_light"]};">📝 Examples</h2>',
+        f'<h3 style="color: {COLORS["sage_light"]}; margin: 0 0 10px 0; font-size: 16px; font-weight: 600;">📝 Examples</h3>',
         unsafe_allow_html=True
     )
     
@@ -154,7 +46,6 @@ def render_example_sentences():
         "Die Frau liest das Buch.",
         "Das Kind isst einen Apfel.",
         "Die Kinder spielen im Garten.",
-        "Der Mann kauft eine Blume für die Frau.",
     ]
     
     for example in examples:
@@ -173,18 +64,25 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    # Custom CSS with new color palette
+    # Custom CSS
     st.markdown(
         f"""
         <style>
         /* Main app background */
         .stApp {{
-            background-color: {COLORS["purple_darker"]};
+            background-color: {COLORS["black"]};
+        }}
+        
+        /* Main content padding */
+        .main .block-container {{
+            padding: 20px 30px;
+            max-width: 1400px;
         }}
         
         /* Sidebar styling */
         [data-testid="stSidebar"] {{
-            background-color: {COLORS["purple_dark"]};
+            background-color: {COLORS["purple_darker"]};
+            border-right: 2px solid {COLORS["purple_muted"]};
         }}
         
         [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {{
@@ -193,31 +91,43 @@ def main():
         
         /* Text area styling */
         .stTextArea textarea {{
-            font-size: 18px;
-            background-color: {COLORS["purple_dark"]};
-            color: {COLORS["sage_light"]};
+            font-size: 16px;
+            background-color: {COLORS["purple_dark"]} !important;
+            color: {COLORS["sage_light"]} !important;
             border: 2px solid {COLORS["purple_muted"]};
-            border-radius: 12px;
+            border-radius: 8px;
+            -webkit-text-fill-color: {COLORS["sage_light"]} !important;
+            opacity: 1 !important;
+        }}
+        
+        .stTextArea textarea:focus {{
+            border-color: {COLORS["sage_light"]};
+            box-shadow: none;
         }}
         
         .stTextArea textarea::placeholder {{
-            color: {COLORS["gray_medium"]};
+            color: {COLORS["gray_medium"]} !important;
+            -webkit-text-fill-color: {COLORS["gray_medium"]} !important;
         }}
         
-        /* Button styling */
-        .stButton button {{
-            font-size: 16px;
-            padding: 12px 24px;
-            background-color: {COLORS["purple_muted"]};
-            color: {COLORS["sage_light"]};
-            border: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
+        /* Disabled text area - ensure text is visible */
+        .stTextArea textarea:disabled {{
+            background-color: {COLORS["purple_dark"]} !important;
+            color: {COLORS["sage_light"]} !important;
+            -webkit-text-fill-color: {COLORS["sage_light"]} !important;
+            opacity: 1 !important;
         }}
         
-        .stButton button:hover {{
-            background-color: {COLORS["sage_light"]};
-            color: {COLORS["purple_darker"]};
+        /* Text area labels */
+        .stTextArea label {{
+            color: {COLORS["sage_light"]} !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }}
+        
+        /* Fix label color for all text inputs */
+        .stTextArea label p {{
+            color: {COLORS["sage_light"]} !important;
         }}
         
         /* Sidebar buttons */
@@ -225,8 +135,12 @@ def main():
             background-color: {COLORS["purple_darker"]};
             color: {COLORS["sage_light"]};
             border: 1px solid {COLORS["purple_muted"]};
-            font-size: 14px;
+            font-size: 12px;
+            padding: 8px 12px;
             text-align: left;
+            width: 100%;
+            margin-bottom: 5px;
+            border-radius: 6px;
         }}
         
         [data-testid="stSidebar"] .stButton button:hover {{
@@ -234,70 +148,141 @@ def main():
             border-color: {COLORS["sage_light"]};
         }}
         
-        /* Divider/hr styling */
-        hr {{
-            border-color: {COLORS["purple_muted"]};
-        }}
-        
-        /* Spinner */
-        .stSpinner > div {{
-            border-top-color: {COLORS["sage_light"]} !important;
-        }}
-        
         /* Hide default Streamlit elements */
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
+        header {{visibility: hidden;}}
+        
+        /* Card styling */
+        .card {{
+            background: {COLORS["purple_dark"]};
+            border: 2px solid {COLORS["purple_muted"]};
+            border-radius: 8px;
+            padding: 20px;
+            height: 100%;
+        }}
+        
+        .card-title {{
+            color: {COLORS["sage_light"]};
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+        }}
+        
+        .card-content {{
+            color: {COLORS["sage_light"]};
+            font-size: 16px;
+            line-height: 1.9;
+            font-family: 'Georgia', 'Times New Roman', serif;
+        }}
+        
+        /* Dialog styling - speaker names */
+        .card-content strong {{
+            color: {COLORS["sage_light"]};
+            font-weight: 700;
+        }}
+        
+        /* Dialog paragraphs */
+        .card-content div {{
+            margin-bottom: 10px;
+        }}
         </style>
         """,
         unsafe_allow_html=True
     )
     
     # Render sidebar
-    render_color_legend()
-    render_example_sentences()
+    render_sidebar()
     
-    # Render main content
-    render_header()
-    
-    # Check if example was clicked
+    # Get example text if clicked
     if "example_text" in st.session_state:
-        german_text = st.session_state.example_text
+        default_text = st.session_state.example_text
         del st.session_state.example_text
     else:
-        german_text = ""
+        default_text = ""
     
-    # Input section
-    st.markdown(
-        f'<h3 style="color: {COLORS["sage_light"]};">✍️ Enter German Text</h3>',
-        unsafe_allow_html=True
-    )
+    # ═══════════════════════════════════════════════════════════════
+    # MAIN CONTENT - GRID LAYOUT
+    # ═══════════════════════════════════════════════════════════════
     
-    german_text = st.text_area(
-        label="German text input",
-        value=german_text,
-        placeholder="Type or paste German text here... (e.g., Der Hund spielt mit der Katze.)",
-        height=120,
-        label_visibility="collapsed"
-    )
+    # Create two main columns: Left (input + german) | Right (translations)
+    col_left, col_right = st.columns([1, 1], gap="medium")
     
-    if german_text:
-        st.markdown(
-            f'<hr style="border-color: {COLORS["purple_muted"]}; margin: 30px 0;">',
-            unsafe_allow_html=True
+    with col_left:
+        # ─────────────────────────────────────────
+        # ENTER GERMAN TEXT (Simple label + text area)
+        # ─────────────────────────────────────────
+        german_text = st.text_area(
+            label="✍️ Enter German Text (supports dialogs with multiple speakers)",
+            value=default_text,
+            placeholder="Paste your German dialog here...\n\nExample:\nMichael: Guten Tag, wie geht es Ihnen?\nHr. Schmidt: Mir geht es gut, danke!",
+            height=200,
         )
         
-        # Colorized German
-        render_colorized_german(german_text)
+        # ─────────────────────────────────────────
+        # GERMAN WITH GENDER COLORS
+        # ─────────────────────────────────────────
+        if german_text:
+            colorized_html = colorize_text_html(german_text)
+            st.markdown(
+                f'''
+                <div class="card" style="margin-top: 20px; max-height: 500px; overflow-y: auto;">
+                    <div class="card-title">🇩🇪 German with Gender Colors</div>
+                    <div class="card-content">{colorized_html}</div>
+                </div>
+                ''',
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                f'''
+                <div class="card" style="min-height: 200px; margin-top: 20px;">
+                    <div class="card-title">🇩🇪 German with Gender Colors</div>
+                    <div style="color: {COLORS["gray_medium"]}; font-size: 14px;">
+                        Enter text above to see gender-colored output
+                    </div>
+                </div>
+                ''',
+                unsafe_allow_html=True
+            )
+    
+    with col_right:
+        # ─────────────────────────────────────────
+        # ENGLISH TRANSLATION (Text area - expandable)
+        # ─────────────────────────────────────────
+        if german_text:
+            english_text = translate_to_english(german_text)
+        else:
+            english_text = ""
         
-        st.markdown("<div style='margin-top: 25px;'></div>", unsafe_allow_html=True)
+        st.markdown(f'<p style="color: {COLORS["sage_light"]}; font-size: 14px; font-weight: 600; margin-bottom: 5px;">🇬🇧 English Translation</p>', unsafe_allow_html=True)
+        st.text_area(
+            label="English Translation",
+            value=english_text,
+            placeholder="Translation will appear here...",
+            height=200,
+            label_visibility="collapsed",
+            key=f"english_{hash(german_text)}"
+        )
         
-        # English Translation
-        render_english_translation(german_text)
+        # ─────────────────────────────────────────
+        # SPANISH TRANSLATION (Text area - expandable)
+        # ─────────────────────────────────────────
+        if german_text:
+            spanish_text = translate_to_spanish(german_text)
+        else:
+            spanish_text = ""
         
-        st.markdown("<div style='margin-top: 25px;'></div>", unsafe_allow_html=True)
-        
-        # Spanish Translation
-        render_spanish_translation(german_text)
+        st.markdown(f'<p style="color: {COLORS["sage_light"]}; font-size: 14px; font-weight: 600; margin-bottom: 5px;">🇪🇸 Spanish Translation</p>', unsafe_allow_html=True)
+        st.text_area(
+            label="Spanish Translation",
+            value=spanish_text,
+            placeholder="Translation will appear here...",
+            height=200,
+            label_visibility="collapsed",
+            key=f"spanish_{hash(german_text)}"
+        )
 
 
 if __name__ == "__main__":
