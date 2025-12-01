@@ -248,13 +248,14 @@ def colorize_line(line: str) -> str:
     return "".join(html_parts)
 
 
-def colorize_text_html(german_text: str) -> str:
+def colorize_text_html(german_text: str, speaker_color_map: Dict[str, str] = None) -> str:
     """
     Return German text with HTML color spans for articles and nouns.
-    Preserves line breaks and formats dialog with speaker names.
+    Preserves line breaks and formats dialog with speaker names in colors.
     
     Args:
         german_text: The German text to colorize
+        speaker_color_map: Optional mapping of speaker names to colors
         
     Returns:
         HTML string with colored spans and proper formatting
@@ -266,6 +267,8 @@ def colorize_text_html(german_text: str) -> str:
     lines = german_text.split('\n')
     html_lines = []
     
+    import re
+    
     for line in lines:
         if not line.strip():
             html_lines.append('<br>')
@@ -273,16 +276,19 @@ def colorize_text_html(german_text: str) -> str:
         
         # Check if line starts with a speaker name (e.g., "Michael:", "Hr. Scheibe:")
         # Pattern: text followed by colon at the start
-        import re
         speaker_match = re.match(r'^([A-Za-zÄÖÜäöüß\.\s]+):\s*', line)
         
         if speaker_match:
-            speaker = speaker_match.group(1)
+            speaker = speaker_match.group(1).strip()
             rest_of_line = line[speaker_match.end():]
-            # Style the speaker name in bold
+            # Style the speaker name in bold with color
             colorized_rest = colorize_line(rest_of_line)
+            
+            # Get speaker color from map or use default
+            speaker_color = speaker_color_map.get(speaker, "#BFC3BA") if speaker_color_map else "#BFC3BA"
+            
             html_lines.append(
-                f'<div style="margin-bottom: 12px;"><strong style="color: inherit;">{speaker}:</strong> {colorized_rest}</div>'
+                f'<div style="margin-bottom: 12px;"><strong style="color: {speaker_color};">{speaker}:</strong> {colorized_rest}</div>'
             )
         else:
             # Regular line without speaker

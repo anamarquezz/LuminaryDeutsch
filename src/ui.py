@@ -18,6 +18,97 @@ COLORS = {
 }
 
 
+# Speaker color palette for dialog names
+SPEAKER_COLORS = [
+    "#F472B6",  # Pink
+    "#60A5FA",  # Blue
+    "#34D399",  # Emerald
+    "#FBBF24",  # Amber
+    "#A78BFA",  # Violet
+    "#FB923C",  # Orange
+    "#2DD4BF",  # Teal
+    "#F87171",  # Red
+]
+
+
+def extract_speakers(text: str) -> dict:
+    """
+    Extract all speaker names from text and assign consistent colors.
+    
+    Args:
+        text: The text to parse for speaker names
+        
+    Returns:
+        Dictionary mapping speaker names to their assigned colors
+    """
+    import re
+    
+    if not text or not text.strip():
+        return {}
+    
+    speaker_color_map = {}
+    color_index = 0
+    
+    for line in text.split('\n'):
+        speaker_match = re.match(r'^([A-Za-zÄÖÜäöüß\.\s]+):\s*', line)
+        if speaker_match:
+            speaker = speaker_match.group(1).strip()
+            if speaker not in speaker_color_map:
+                speaker_color_map[speaker] = SPEAKER_COLORS[color_index % len(SPEAKER_COLORS)]
+                color_index += 1
+    
+    return speaker_color_map
+
+
+def format_translation_html(text: str, speaker_color_map: dict = None) -> str:
+    """
+    Format translation text with proper HTML structure.
+    Preserves line breaks and formats dialog with speaker names in different colors.
+    
+    Args:
+        text: The translation text to format
+        speaker_color_map: Optional pre-defined speaker-to-color mapping for consistency
+        
+    Returns:
+        HTML string with proper formatting
+    """
+    import re
+    
+    if not text or not text.strip():
+        return ""
+    
+    lines = text.split('\n')
+    html_lines = []
+    
+    # Use provided map or create new one
+    if speaker_color_map is None:
+        speaker_color_map = {}
+        color_index = 0
+    
+    for line in lines:
+        if not line.strip():
+            html_lines.append('<br>')
+            continue
+        
+        # Check if line starts with a speaker name (e.g., "Michael:", "Hr. Schmidt:")
+        speaker_match = re.match(r'^([A-Za-zÄÖÜäöüß\.\s]+):\s*', line)
+        
+        if speaker_match:
+            speaker = speaker_match.group(1).strip()
+            rest_of_line = line[speaker_match.end():]
+            
+            # Get color from map or assign default
+            speaker_color = speaker_color_map.get(speaker, COLORS["sage_light"])
+            
+            html_lines.append(
+                f'<div style="margin-bottom: 12px;"><strong style="color: {speaker_color};">{speaker}:</strong> {rest_of_line}</div>'
+            )
+        else:
+            html_lines.append(f'<div style="margin-bottom: 12px;">{line}</div>')
+    
+    return "".join(html_lines)
+
+
 def render_sidebar():
     """Render sidebar with Color Legend and Examples."""
     # ─────────────────────────────────────────
@@ -206,29 +297,59 @@ def main():
     # MAIN CONTENT - GRID LAYOUT
     # ═══════════════════════════════════════════════════════════════
     
-    # Create two main columns: Left (input + german) | Right (translations)
-    col_left, col_right = st.columns([1, 1], gap="medium")
+    # ─────────────────────────────────────────
+    # ROW 1: INPUT & GERMAN COLORS (Input | Gender Colors)
+    # ─────────────────────────────────────────
+    col_input, col_german = st.columns([1, 1], gap="medium")
     
-    with col_left:
-        # ─────────────────────────────────────────
-        # ENTER GERMAN TEXT (Simple label + text area)
-        # ─────────────────────────────────────────
+    with col_input:
         german_text = st.text_area(
             label="✍️ Enter German Text (supports dialogs with multiple speakers)",
             value=default_text,
             placeholder="Paste your German dialog here...\n\nExample:\nMichael: Guten Tag, wie geht es Ihnen?\nHr. Schmidt: Mir geht es gut, danke!",
-            height=200,
+            height=120,
         )
         
-        # ─────────────────────────────────────────
-        # GERMAN WITH GENDER COLORS
-        # ─────────────────────────────────────────
+        # Extract speaker colors from German text for consistent coloring across all panels
+        speaker_color_map = extract_speakers(german_text) if german_text else {}
+        
+        # Show formatted preview with colored speaker names below input
+        st.markdown(
+            f'<p style="color: {COLORS["sage_light"]}; font-size: 14px; font-weight: 600; margin-top: 10px; margin-bottom: 5px;">📝 Input Preview</p>',
+            unsafe_allow_html=True
+        )
         if german_text:
-            colorized_html = colorize_text_html(german_text)
+            input_preview_html = format_translation_html(german_text, speaker_color_map)
             st.markdown(
                 f'''
-                <div class="card" style="margin-top: 20px; max-height: 500px; overflow-y: auto;">
-                    <div class="card-title">🇩🇪 German with Gender Colors</div>
+                <div class="card" style="height: 250px; overflow-y: auto;">
+                    <div class="card-content">{input_preview_html}</div>
+                </div>
+                ''',
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                f'''
+                <div class="card" style="height: 250px;">
+                    <div style="color: {COLORS["gray_medium"]}; font-size: 14px;">
+                        Your formatted text will appear here...
+                    </div>
+                </div>
+                ''',
+                unsafe_allow_html=True
+            )
+    
+    with col_german:
+        st.markdown(
+            f'<p style="color: {COLORS["sage_light"]}; font-size: 14px; font-weight: 600; margin-bottom: 5px;">🇩🇪 German with Gender Colors</p>',
+            unsafe_allow_html=True
+        )
+        if german_text:
+            colorized_html = colorize_text_html(german_text, speaker_color_map)
+            st.markdown(
+                f'''
+                <div class="card" style="height: 400px; overflow-y: auto;">
                     <div class="card-content">{colorized_html}</div>
                 </div>
                 ''',
@@ -237,52 +358,76 @@ def main():
         else:
             st.markdown(
                 f'''
-                <div class="card" style="min-height: 200px; margin-top: 20px;">
-                    <div class="card-title">🇩🇪 German with Gender Colors</div>
+                <div class="card" style="height: 400px;">
                     <div style="color: {COLORS["gray_medium"]}; font-size: 14px;">
-                        Enter text above to see gender-colored output
+                        Enter text to the left to see gender-colored output
                     </div>
                 </div>
                 ''',
                 unsafe_allow_html=True
             )
     
-    with col_right:
-        # ─────────────────────────────────────────
-        # ENGLISH TRANSLATION (Text area - expandable)
-        # ─────────────────────────────────────────
+    # ─────────────────────────────────────────
+    # ROW 2: TRANSLATIONS (English | Spanish)
+    # ─────────────────────────────────────────
+    
+    col_eng, col_esp = st.columns([1, 1], gap="medium")
+    
+    with col_eng:
+        st.markdown(
+            f'<p style="color: {COLORS["sage_light"]}; font-size: 14px; font-weight: 600; margin-bottom: 5px;">🇬🇧 English Translation</p>',
+            unsafe_allow_html=True
+        )
         if german_text:
             english_text = translate_to_english(german_text)
+            english_html = format_translation_html(english_text, speaker_color_map)
+            st.markdown(
+                f'''
+                <div class="card" style="height: 400px; overflow-y: auto;">
+                    <div class="card-content">{english_html}</div>
+                </div>
+                ''',
+                unsafe_allow_html=True
+            )
         else:
-            english_text = ""
-        
-        st.markdown(f'<p style="color: {COLORS["sage_light"]}; font-size: 14px; font-weight: 600; margin-bottom: 5px;">🇬🇧 English Translation</p>', unsafe_allow_html=True)
-        st.text_area(
-            label="English Translation",
-            value=english_text,
-            placeholder="Translation will appear here...",
-            height=200,
-            label_visibility="collapsed",
-            key=f"english_{hash(german_text)}"
+            st.markdown(
+                f'''
+                <div class="card" style="height: 400px;">
+                    <div style="color: {COLORS["gray_medium"]}; font-size: 14px;">
+                        Translation will appear here...
+                    </div>
+                </div>
+                ''',
+                unsafe_allow_html=True
+            )
+    
+    with col_esp:
+        st.markdown(
+            f'<p style="color: {COLORS["sage_light"]}; font-size: 14px; font-weight: 600; margin-bottom: 5px;">🇪🇸 Spanish Translation</p>',
+            unsafe_allow_html=True
         )
-        
-        # ─────────────────────────────────────────
-        # SPANISH TRANSLATION (Text area - expandable)
-        # ─────────────────────────────────────────
         if german_text:
             spanish_text = translate_to_spanish(german_text)
+            spanish_html = format_translation_html(spanish_text, speaker_color_map)
+            st.markdown(
+                f'''
+                <div class="card" style="height: 400px; overflow-y: auto;">
+                    <div class="card-content">{spanish_html}</div>
+                </div>
+                ''',
+                unsafe_allow_html=True
+            )
         else:
-            spanish_text = ""
-        
-        st.markdown(f'<p style="color: {COLORS["sage_light"]}; font-size: 14px; font-weight: 600; margin-bottom: 5px;">🇪🇸 Spanish Translation</p>', unsafe_allow_html=True)
-        st.text_area(
-            label="Spanish Translation",
-            value=spanish_text,
-            placeholder="Translation will appear here...",
-            height=200,
-            label_visibility="collapsed",
-            key=f"spanish_{hash(german_text)}"
-        )
+            st.markdown(
+                f'''
+                <div class="card" style="height: 400px;">
+                    <div style="color: {COLORS["gray_medium"]}; font-size: 14px;">
+                        Translation will appear here...
+                    </div>
+                </div>
+                ''',
+                unsafe_allow_html=True
+            )
 
 
 if __name__ == "__main__":
