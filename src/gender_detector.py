@@ -15,7 +15,7 @@ GENDER_COLORS = {
     "feminine": "#EC4899",    # Pink
     "neuter": "#22C55E",      # Green
     "plural": "#F97316",      # Orange
-    "default": "#1F2937",     # Dark gray (for non-gendered words)
+    "default": "#eecc25",     # Dark gray (for non-gendered words)
 }
 
 # German definite articles
@@ -23,6 +23,41 @@ DEFINITE_ARTICLES = {"der", "die", "das"}
 
 # German indefinite articles
 INDEFINITE_ARTICLES = {"ein", "eine", "einen", "einem", "einer", "eines"}
+
+# German negative articles (kein)
+NEGATIVE_ARTICLES = {"kein", "keine", "keinen", "keinem", "keiner", "keines"}
+
+# German possessive articles
+POSSESSIVE_ARTICLES = {
+    "mein", "meine", "meinen", "meinem", "meiner", "meines",
+    "dein", "deine", "deinen", "deinem", "deiner", "deines",
+    "sein", "seine", "seinen", "seinem", "seiner", "seines",
+    "ihr", "ihre", "ihren", "ihrem", "ihrer", "ihres",
+    "unser", "unsere", "unseren", "unserem", "unserer", "unseres",
+    "euer", "eure", "euren", "eurem", "eurer", "eures",
+}
+
+# German personal pronouns with their gender/number
+PERSONAL_PRONOUNS = {
+    # Nominative
+    "ich": "default",      # 1st person singular
+    "du": "default",       # 2nd person singular
+    "er": "masculine",     # 3rd person singular masculine
+    "sie": "feminine",     # 3rd person singular feminine (or plural/formal)
+    "es": "neuter",        # 3rd person singular neuter
+    "wir": "plural",       # 1st person plural
+    "ihr": "plural",       # 2nd person plural
+    # Accusative
+    "mich": "default",
+    "dich": "default",
+    "ihn": "masculine",
+    "uns": "plural",
+    "euch": "plural",
+    # Dative
+    "mir": "default",
+    "dir": "default",
+    "ihm": "masculine",
+}
 
 
 def get_gender_from_article(token) -> str:
@@ -112,13 +147,36 @@ def analyze_text(german_text: str) -> List[Dict]:
         
         text_lower = token.text.lower()
         
-        # Check if it's an article
+        # Check if it's a definite or indefinite article
         if text_lower in DEFINITE_ARTICLES or text_lower in INDEFINITE_ARTICLES:
             gender = get_gender_from_article(token)
             word_info["gender"] = gender
             word_info["color"] = GENDER_COLORS.get(gender, GENDER_COLORS["default"])
             word_info["is_article"] = True
             current_gender = gender
+        
+        # Check if it's a negative article (kein)
+        elif text_lower in NEGATIVE_ARTICLES:
+            gender = get_gender_from_article(token)
+            word_info["gender"] = gender
+            word_info["color"] = GENDER_COLORS.get(gender, GENDER_COLORS["default"])
+            word_info["is_article"] = True
+            current_gender = gender
+        
+        # Check if it's a possessive article (mein, dein, sein, etc.)
+        elif text_lower in POSSESSIVE_ARTICLES:
+            gender = get_gender_from_article(token)
+            word_info["gender"] = gender
+            word_info["color"] = GENDER_COLORS.get(gender, GENDER_COLORS["default"])
+            word_info["is_article"] = True
+            current_gender = gender
+        
+        # Check if it's a personal pronoun
+        elif text_lower in PERSONAL_PRONOUNS:
+            gender = PERSONAL_PRONOUNS[text_lower]
+            word_info["gender"] = gender
+            word_info["color"] = GENDER_COLORS.get(gender, GENDER_COLORS["default"])
+            word_info["is_article"] = True  # Treat as article for coloring
         
         # Check if it's a noun (apply the article's gender)
         elif token.pos_ == "NOUN":
@@ -153,32 +211,30 @@ def analyze_text(german_text: str) -> List[Dict]:
     return result
 
 
-def colorize_text_html(german_text: str) -> str:
+def colorize_line(line: str) -> str:
     """
-    Return German text with HTML color spans for articles and nouns.
+    Colorize a single line of German text.
     
     Args:
-        german_text: The German text to colorize
+        line: A single line of German text
         
     Returns:
         HTML string with colored spans
     """
-    if not german_text or not german_text.strip():
+    if not line or not line.strip():
         return ""
     
-    analyzed = analyze_text(german_text)
+    analyzed = analyze_text(line)
     html_parts = []
     
     for i, word_info in enumerate(analyzed):
         word = word_info["word"]
         color = word_info["color"]
-        is_colored = word_info["is_article"] or word_info["is_noun"]
         
-        if is_colored:
-            # Bold for articles, regular weight for nouns
-            weight = "700" if word_info["is_article"] else "600"
+        # Only color articles, not nouns
+        if word_info["is_article"]:
             html_parts.append(
-                f'<span style="color: {color}; font-weight: {weight};">{word}</span>'
+                f'<span style="color: {color}; font-weight: 700;">{word}</span>'
             )
         else:
             html_parts.append(word)
@@ -192,6 +248,56 @@ def colorize_text_html(german_text: str) -> str:
     return "".join(html_parts)
 
 
+def colorize_text_html(german_text: str, speaker_color_map: Dict[str, str] = None) -> str:
+    """
+    Return German text with HTML color spans for articles and nouns.
+    Preserves line breaks and formats dialog with speaker names in colors.
+    
+    Args:
+        german_text: The German text to colorize
+        speaker_color_map: Optional mapping of speaker names to colors
+        
+    Returns:
+        HTML string with colored spans and proper formatting
+    """
+    if not german_text or not german_text.strip():
+        return ""
+    
+    # Split by line breaks to preserve dialog structure
+    lines = german_text.split('\n')
+    html_lines = []
+    
+    import re
+    
+    for line in lines:
+        if not line.strip():
+            html_lines.append('<br>')
+            continue
+        
+        # Check if line starts with a speaker name (e.g., "Michael:", "Hr. Scheibe:")
+        # Pattern: text followed by colon at the start
+        speaker_match = re.match(r'^([A-Za-zÄÖÜäöüß\.\s]+):\s*', line)
+        
+        if speaker_match:
+            speaker = speaker_match.group(1).strip()
+            rest_of_line = line[speaker_match.end():]
+            # Style the speaker name in bold with color
+            colorized_rest = colorize_line(rest_of_line)
+            
+            # Get speaker color from map or use default
+            speaker_color = speaker_color_map.get(speaker, "#BFC3BA") if speaker_color_map else "#BFC3BA"
+            
+            html_lines.append(
+                f'<div style="margin-bottom: 12px;"><strong style="color: {speaker_color};">{speaker}:</strong> {colorized_rest}</div>'
+            )
+        else:
+            # Regular line without speaker
+            colorized = colorize_line(line)
+            html_lines.append(f'<div style="margin-bottom: 12px;">{colorized}</div>')
+    
+    return "".join(html_lines)
+
+
 def get_color_legend() -> Dict[str, str]:
     """
     Return the color legend for the UI.
@@ -200,9 +306,9 @@ def get_color_legend() -> Dict[str, str]:
         Dictionary mapping gender names to their colors
     """
     return {
-        "Masculine (der)": GENDER_COLORS["masculine"],
-        "Feminine (die)": GENDER_COLORS["feminine"],
-        "Neuter (das)": GENDER_COLORS["neuter"],
-        "Plural (die)": GENDER_COLORS["plural"],
+        "Masculine (der, ein, er, ihn...)": GENDER_COLORS["masculine"],
+        "Feminine (die, eine, sie...)": GENDER_COLORS["feminine"],
+        "Neuter (das, ein, es...)": GENDER_COLORS["neuter"],
+        "Plural (die, wir, ihr...)": GENDER_COLORS["plural"],
     }
 
