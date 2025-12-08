@@ -1,0 +1,22 @@
+services:
+  luminary-deutsch-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: luminary-deutsch-dev
+    ports:
+      - "8501:8501"
+    volumes:
+      # Mount entire source code for live development
+      - ./src:/app/src
+      - ./main.py:/app/main.py
+      - ./requirements.txt:/app/requirements.txt
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_RUN_ON_SAVE=true
+      - STREAMLIT_SERVER_FILE_WATCHER_TYPE=poll
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
